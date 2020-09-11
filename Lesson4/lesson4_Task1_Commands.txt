@@ -1,0 +1,134 @@
+﻿DROP DATABASE vk;
+CREATE DATABASE vk;
+use vk;
+
+SHOW tables;
+
+-- 1. Работа с таблицей user_statuses
+
+SELECT * from user_statuses LIMIT 10;
+
+-- Таблица статусов пользователей
+CREATE TABLE user_statuses (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "Идентификатор строки", 
+  name VARCHAR(100) NOT NULL COMMENT "Название статуса (уникально)",
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "Время создания строки",  
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "Время обновления строки"
+) COMMENT "Справочник стран";  
+
+INSERT INTO user_statuses (name) VALUES
+ ('single'),
+ ('married'),
+ ('have a friend'),
+ ('Actively looking');
+ 
+ -- 2. Работа с таблицей profiles
+ 
+DESC profiles;
+SELECT * from profiles limit 10;
+
+UPDATE profiles SET status = null;
+
+ALTER TABLE profiles RENAME COLUMN status TO user_status_id; 
+ALTER TABLE profiles MODIFY COLUMN user_status_id INT UNSIGNED; 
+
+UPDATE profiles SET photo_id = FLOOR(1 + RAND() * 100);
+UPDATE profiles SET user_status_id = FLOOR(1 + RAND() * 4);
+
+ -- 3. Работа с таблицей friendship
+
+RENAME TABLE friendship TO friendships;
+
+SELECT * FROM friendships LIMIT 10;
+UPDATE friendships SET updated_at = NOW() WHERE updated_at < created_at; 
+UPDATE friendships SET confirmed_at = NOW() WHERE confirmed_at < requested_at; 
+
+ -- 4. Работа с таблицей users
+
+SELECT * FROM users LIMIT 10;
+UPDATE users SET updated_at = NOW() WHERE updated_at < created_at;        
+
+ -- 5. Работа с таблицей messages
+
+SELECT * FROM messages LIMIT 10;
+UPDATE messages SET updated_at = NOW() WHERE updated_at < created_at;   
+
+
+ -- 6. Работа с таблицей media
+
+SELECT * FROM media LIMIT 10;
+UPDATE media SET updated_at = NOW() WHERE updated_at < created_at; 
+UPDATE media SET media_type_id = FLOOR(1 + RAND() * 4);
+UPDATE media SET user_id = FLOOR(1 + RAND() * 100);
+
+CREATE TEMPORARY TABLE extensions (name VARCHAR(20));
+INSERT INTO extensions VALUES ('jpeg'), 
+								('avi'), 
+								('mpeg'), 
+								('png'),
+								('mp3'),
+								('mp4'),
+								('mov'),
+								('wav'),
+								('gif'),
+								('pdf'),
+								('doc'),
+								('xls');
+SELECT * FROM extensions;
+
+UPDATE media SET filename = CONCAT(
+  'http://dropbox.net/vk/',
+  filename,
+  (SELECT last_name FROM users ORDER BY RAND() LIMIT 1),
+  '.',
+  (SELECT name FROM extensions ORDER BY RAND() LIMIT 1)
+);
+
+UPDATE media SET filename = REPLACE(filename, 'http:', 'https:'); -- исправление ошибки с http
+
+UPDATE media SET size = FLOOR(10000 + (RAND() * 1000000)) WHERE size < 1000;
+ALTER TABLE media MODIFY COLUMN metadata JSON;
+
+UPDATE media SET metadata = CONCAT('{"owner":"', 
+  (SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = user_id),
+  '"}');  
+
+ -- 7. Работа с таблицей media_types
+
+SELECT * FROM media_types;
+UPDATE media_types SET updated_at = NOW() WHERE updated_at < created_at; 
+
+ -- 8. Работа с таблицей friendship_statuses
+
+SELECT * FROM friendship_statuses;
+UPDATE friendship_statuses SET name = 'Requested' WHERE name = 'friends';
+UPDATE friendship_statuses SET name = 'Confirmed' WHERE name = 'subscriber';
+UPDATE friendship_statuses SET name = 'Rejected' WHERE name = 'noone';
+
+ -- 9. Работа с таблицей communities
+
+SELECT * FROM communities;
+UPDATE communities SET updated_at = NOW() WHERE updated_at < created_at; 
+DELETE FROM communities WHERE id > 20;
+
+ -- 10. Работа с таблицей communities_users
+
+Desc communities_users;
+SELECT * FROM communities_users;
+UPDATE communities_users SET community_id = FLOOR(1 + RAND() * 20);
+
+-- Общая повторная визуальная проверка массивов данных на наличие ошибок
+
+SELECT * from communities LIMIT 100;
+SELECT * from communities_users LIMIT 100;
+SELECT * from friendship_statuses LIMIT 100;
+SELECT * from friendships LIMIT 100;
+SELECT * from media LIMIT 100;
+SELECT * from media_types LIMIT 100;
+SELECT * from messages LIMIT 100;
+SELECT * from users LIMIT 100;
+SELECT * from profiles LIMIT 100;
+SELECT * from user_statuses LIMIT 100;
+
+
+ 
